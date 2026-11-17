@@ -1,7 +1,9 @@
+
 import streamlit as st
 import torch
 from torchvision import transforms
 from PIL import Image
+from pathlib import Path
 
 from model import ImprovedCNN
 
@@ -12,7 +14,7 @@ CLASS_NAMES = [
     "Chrysanthemum",
     "Hibiscus",
     "Marigold",
-    "Petuniya",
+    "Petunia",
     "Rose"
 ]
 
@@ -21,13 +23,16 @@ device = torch.device(
     "cuda" if torch.cuda.is_available() else "cpu"
 )
 
+# Model path
+MODEL_PATH = Path(__file__).parent / "best_cnn.pth"
+
 # Load model
 @st.cache_resource
 def load_model():
     model = ImprovedCNN(num_classes=len(CLASS_NAMES))
 
     state_dict = torch.load(
-        "model.pth",
+        MODEL_PATH,
         map_location=device,
         weights_only=True
     )
@@ -52,7 +57,10 @@ transform = transforms.Compose([
 
 # Streamlit UI
 st.title("Deep Learning Image Classification")
-st.write("Upload an image to predict its class.")
+
+st.write(
+    "Upload an image of a flower to predict its class."
+)
 
 uploaded_file = st.file_uploader(
     "Choose an image",
@@ -63,7 +71,11 @@ if uploaded_file is not None:
 
     image = Image.open(uploaded_file).convert("RGB")
 
-    st.image(image, caption="Uploaded Image")
+    st.image(
+        image,
+        caption="Uploaded Image",
+        use_container_width=True
+    )
 
     input_tensor = transform(image).unsqueeze(0).to(device)
 
@@ -74,7 +86,8 @@ if uploaded_file is not None:
             probabilities = torch.softmax(outputs, dim=1)
 
             confidence, predicted = torch.max(
-                probabilities, dim=1
+                probabilities,
+                dim=1
             )
 
         predicted_class = CLASS_NAMES[predicted.item()]
