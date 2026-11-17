@@ -1,4 +1,3 @@
-
 import streamlit as st
 import torch
 from torchvision import transforms
@@ -10,48 +9,43 @@ from model import ImprovedCNN
 # Configuration
 IMAGE_SIZE = 128
 
-CLASS_NAMES = [
-    "Chrysanthemum",
-    "Hibiscus",
-    "Marigold",
-    "Petunia",
-    "Rose"
-]
-
 # Device
 device = torch.device(
     "cuda" if torch.cuda.is_available() else "cpu"
 )
 
 # Model path
-MODEL_PATH = Path(__file__).parent / "best_cnn.pth"
+MODEL_PATH = Path(__file__).parent / "best_cnn_improved.pth"
 
 # Load model
 @st.cache_resource
 def load_model():
-    model = ImprovedCNN(num_classes=len(CLASS_NAMES))
-
-    state_dict = torch.load(
+    checkpoint = torch.load(
         MODEL_PATH,
         map_location=device,
         weights_only=True
     )
 
-    model.load_state_dict(state_dict)
+    class_names = checkpoint["classes"]
+
+    model = ImprovedCNN(num_classes=len(class_names))
+    model.load_state_dict(checkpoint["model_state"])
+
     model.to(device)
     model.eval()
 
-    return model
+    return model, class_names
 
-model = load_model()
+
+model, CLASS_NAMES = load_model()
 
 # Image preprocessing
 transform = transforms.Compose([
     transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
     transforms.ToTensor(),
     transforms.Normalize(
-        mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225]
+        mean=[0.5, 0.5, 0.5],
+        std=[0.5, 0.5, 0.5]
     )
 ])
 
